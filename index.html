@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Rounded Corners</title>
+        <meta charset="utf8">
+        <style>
+            body {
+                text-align: center;
+                font-family: Arial, sans-serif;
+                background:#fafafa;
+                color:#555;
+            }
+ 
+            canvas {
+                border:solid 1px gray;
+                margin:20px auto;
+                position: relative;
+                margin-top:-500px;
+            }
+
+            #droptext {
+                font-size:80px;
+                margin-top:450px;
+                color:#999;
+            }
+
+            input {
+                font-size:20px;
+                width:60px;
+            }
+            label {
+                font-size:20px;
+            }
+        </style>
+    </head>
+    <body onload="setup()">
+
+        <h1>ROUNDED CORNERS</h1>
+        <div id="radiusform">
+            <label>BORDER RADIUS %: <input id="radius" type="number" value="15"/></label>
+        </div>
+
+        <div id="droptext">DRAG IMAGE FILE HERE</div>
+        <canvas id="c" width="1024" height="1024"></canvas>
+        <script>
+
+            var canvas, image;
+            
+            function setup() {
+                canvas = document.getElementById('c');
+
+                canvas.addEventListener('drop', drop);
+                canvas.addEventListener('dragover', function(ev) {
+                    ev.preventDefault();
+                });
+
+                document.getElementById('radius').addEventListener('input', applyMask);
+            }
+
+            function drop(ev) {
+                ev.stopPropagation();
+                ev.preventDefault();
+
+                var files = ev.dataTransfer.files;
+                if(files && typeof FileReader !== "undefined") {
+                    readFile(files[0]);
+                } else {
+                    alert("Can't read file :(");
+                }
+            }
+
+            function getMaskImageUrl(image, radiusPercent) {
+
+                var pixelRadius = Math.floor((radiusPercent/100) * image.width);
+                return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="' + image.width + '" height="' + image.height + '">' +
+                    '<rect width="100%" height="100%" rx="' + pixelRadius + '" ry="' + pixelRadius + '" fill="blue" /></svg>'   
+            }
+
+
+            function applyMask() {
+                if (!image) {
+                    return;
+                }
+
+                var percent = parseFloat(document.getElementById('radius').value);
+                var maskImageUrl = getMaskImageUrl(image, percent);
+
+                var maskImage = new Image();
+                maskImage.onload = function() {
+                    console.log('MASK LOADED')
+                    canvas.width = canvas.width;
+                    var ctx = canvas.getContext('2d');
+
+                    ctx.drawImage(maskImage, 0, 0);
+                    ctx.globalCompositeOperation = 'source-atop';
+                    ctx.drawImage(image, 0, 0);
+                }
+                maskImage.src = maskImageUrl;
+            }
+
+            function readFile(file) {
+                if (!/image/i.test(file.type)) {
+                    alert('Only image files are supported!');
+                    return;
+                }
+
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    image = new Image();
+                    image.src = reader.result;
+                    
+                    image.onload = function() {
+                        canvas.width = image.width;
+                        canvas.height = image.height;
+                        canvas.style.border = 'none';
+                        applyMask();
+                    };
+                };
+
+                reader.readAsDataURL(file);
+            }
+        </script>
+    </body>
+</html>
